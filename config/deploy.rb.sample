@@ -1,0 +1,35 @@
+require 'deployr/configuration'
+require 'net/smtp'
+
+class Deploy
+  include Deployr::Configuration
+
+  MAIL_FROM = 'deployr@example.com'
+
+  def deploy
+    case "#{repository}/#{branch}"
+    when 'myproject/master'
+      run 'ssh', 'deploy@myserver', '/path/to/my/project/build/script', revision
+    end
+
+    mail_to committers,
+      :subject => "Deployed #{repository} #{revision[0..7]}",
+      :message => "Deployed #{revision}. Command output follows:\n\n#{result.join "\n\n---\n\n"}"
+  end
+
+  def mail_to(recipients, options)
+    return if recipients.empty?
+
+    message = <<MESSAGE
+From: Deployr <#{MAIL_FROM}>
+Subject: #{options[:subject]}
+Date: #{Time.new.strftime '%a, %d %b %Y %H:%M:%S %z'}
+
+#{options[:message]}
+MESSAGE
+
+    Net::SMTP.start('localhost', 25) do |smtp|
+      smtp.send_message message, MAIL_FROM, recipients
+    end
+  end
+end

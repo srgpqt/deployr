@@ -1,0 +1,3 @@
+module Deployr
+  VERSION = "0.0.1"
+end
